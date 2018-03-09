@@ -12,13 +12,12 @@ from sqlalchemy.orm import joinedload
 
 from indico.modules.events.models.events import Event
 from indico.modules.events.registration.util import build_registration_api_data
-#from indico.modules.events.api import EventBaseHook
 from indico.web.http_api import HTTPAPIHook
 from indico.web.http_api.util import get_query_parameter
 
 
 @HTTPAPIHook.register
-class MLZExportRegistrationsHook(HTTPAPIHook): 
+class MLZExportRegistrationsHook(HTTPAPIHook):
     RE = r'(?P<event>[\w\s]+)'
     METHOD_NAME = 'export_registration_info'
     TYPES = ('mlzevent', )
@@ -31,16 +30,13 @@ class MLZExportRegistrationsHook(HTTPAPIHook):
         super(MLZExportRegistrationsHook, self)._getParams()
         self._eventId = self._pathParams['event']
         self.event = Event.get(self._eventId, is_deleted=False)
-	self.flat =  get_query_parameter(self._queryParams, ['flat'], False)
-
+        self.flat = get_query_parameter(self._queryParams, ['flat'], False)
 
     def _has_access(self, user):
         return self.event.can_manage(user, permission='registration')
 
     def export_registration_info(self, user):
         return all_registrations(self.event, self.flat)
-
-
 
 
 def all_registrations(event, flat):
@@ -53,35 +49,25 @@ def all_registrations(event, flat):
         one_res['data'] = all_fields(r, flat)
         one_res['price'] = r.price
         result.append(one_res)
-
     return result
 
-def all_fields(r, flat):
+
+def all_fields(registration, flat=False):
+    reg_data = registration.data_by_field
     if flat:
-       return all_fields_flat(r)
+        data = dict()
+        titles = dict()
     else:
-       return all_fields_structured(r)	
-
-def all_fields_flat(registration):
-    reg_data = registration.data_by_field
-    data = dict()
-    titles = dict()
+        data = defaultdict(dict)
     for section in registration.sections_with_answered_fields:
         for field in section.active_fields:
             if field.id not in reg_data:
                 continue
-            data[field.id] = reg_data[field.id].friendly_data
-            titles[field.id] = '{}:{}'.format(section.title,field.title)
-    return [data,titles]
-
-
-
-def all_fields_structured(registration):
-    reg_data = registration.data_by_field
-    data = defaultdict(dict)
-    for section in registration.sections_with_answered_fields:
-        for field in section.active_fields:
-            if field.id not in reg_data:
-                continue
-            data[section.title][field.title] = reg_data[field.id].friendly_data
+            if flat:
+                data[field.id] = reg_data[field.id].friendly_data
+                titles[field.id] = '{}:{}'.format(section.title, field.title)
+            else:
+                data[section.title][field.title] = reg_data[field.id].friendly_data
+    if flat:
+        return [data, titles]
     return dict(data)

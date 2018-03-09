@@ -29,4 +29,4 @@ class RHExportRegistrations(RH):
         self.eventId = request.view_args['event_id']
 
     def _process_GET(self):
-        return jsonify(all_registrations(self.eventId))
+        return jsonify(all_registrations(self.eventId, False))
