@@ -16,40 +16,73 @@ from indico.web.http_api import HTTPAPIHook
 from indico.web.http_api.util import get_query_parameter
 
 
-@HTTPAPIHook.register
-class MLZExportRegistrationsHook(HTTPAPIHook):
-    RE = r'(?P<event>[\w\s]+)'
+class MLZExportBase(HTTPAPIHook):
+    """Base class for Mlz export http api"""
+
     METHOD_NAME = 'export_registration_info'
     TYPES = ('mlzevent', )
     DEFAULT_DETAIL = 'default'
     MAX_RECORDS = {'default': 100}
     GUEST_ALLOWED = False
-    VALID_FORMATS = ('json', 'jsonp', 'xml', 'ics')
+    VALID_FORMATS = ('json', 'jsonp', 'xml')
 
     def _getParams(self):
-        super(MLZExportRegistrationsHook, self)._getParams()
-        self._eventId = self._pathParams['event']
-        self.event = Event.get(self._eventId, is_deleted=False)
+        super(MLZExportBase, self)._getParams()
+        self.event_id = self._pathParams['event']
+        self.event = Event.get(self.event_id, is_deleted=False)
         self.flat = get_query_parameter(self._queryParams, ['flat'], False)
 
     def _has_access(self, user):
         return self.event.can_manage(user, permission='registration')
 
+
+class MLZExportRegistrationsHook(MLZExportBase):
+    """Export a lis tof registrations (with full infos)"""
+
+    RE = r'(?P<event>[\w\s]+)'
+
     def export_registration_info(self, user):
         return all_registrations(self.event, self.flat)
 
 
+class MLZExportRegistrationHook(MLZExportBase):
+    """Export a single registration"""
+
+    RE = r'(?P<event>[\w\s]+)/registrant/(?P<registrant>[\w\s]+)'
+
+    def _getParams(self):
+        super(MLZExportRegistrationHook, self)._getParams()
+        self.registrant_id = self._pathParams['registrant']
+
+    def export_registration_info(self, user):
+        return one_registration(self.event, self.registrant_id, self.flat)
+
+
 def all_registrations(event, flat):
-    _registrations = (event.registrations.filter_by(is_deleted=False)
-                      .options(joinedload('data').joinedload('field_data'))
-                      .all())
+    """Helper to generate data for all registrations in an event"""
+    _registrations = (event.registrations.filter_by(is_deleted=False).options(
+        joinedload('data').joinedload('field_data')).all())
     result = []
-    for r in _registrations:
-        one_res = build_registration_api_data(r)
-        one_res['data'] = all_fields(r, flat)
-        one_res['price'] = r.price
-        result.append(one_res)
+    for _registration in _registrations:
+        result.append(process_field_data(_registration, flat))
     return result
+
+
+def one_registration(event, registrant_id, flat):
+    """Helper to generate data for one registration in an event"""
+    _registration = (event.registrations.filter_by(id=registrant_id, is_deleted=False).options(
+        joinedload('data').joinedload('field_data')).first_or_404())
+    if _registration:
+        return process_field_data(_registration, flat)
+    return None
+
+
+def process_field_data(_registration, flat):
+    """Helper to generate field data for one registration"""
+    one_res = build_registration_api_data(_registration)
+    one_res['data'] = all_fields(_registration, flat)
+    one_res['price'] = _registration.price
+    return one_res
 
 
 def all_fields(registration, flat=False):

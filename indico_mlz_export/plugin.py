@@ -6,18 +6,30 @@ Created on Mar 9, 2018
 from __future__ import unicode_literals
 
 from indico.core.plugins import IndicoPlugin
+from indico.web.http_api import HTTPAPIHook
 from indico_mlz_export.blueprint import blueprint
+from indico_mlz_export.api import MLZExportRegistrationsHook, MLZExportRegistrationHook
 
 
 class MLZExporterPlugin(IndicoPlugin):
-    """
-MLZ API pluign  for ergsitratoin data export to external systems
+    """MLZ registration export API plugin
+
+    Allow for registration data export to external systems
+
+    It offers old-style HTTP-API (http API token authentication
+    endpoints for exporting single registrations or list of all registrations.
+
+    HTTP API:
+        /export/mlzevent/<eventid>.{json|xml}
+        /export/mlzevent/<eventid>/registrant/<registrant_id>.{json|xml}
     """
 
     acl_settings = {'managers'}
 
     def init(self):
         super(MLZExporterPlugin, self).init()
+        HTTPAPIHook.register(MLZExportRegistrationsHook)
+        HTTPAPIHook.register(MLZExportRegistrationHook)
 
     def get_blueprints(self):
         yield blueprint

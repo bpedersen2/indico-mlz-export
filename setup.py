@@ -7,7 +7,6 @@ from __future__ import unicode_literals
 
 from setuptools import find_packages, setup
 
-
 setup(
     name='indico-mlz-export',
     version='2.0.dev0',
@@ -18,9 +17,7 @@ setup(
     packages=find_packages(),
     zip_safe=False,
     include_package_data=True,
-    install_requires=[
-        'indico>=2.0.0'
-    ],
+    install_requires=['indico>=2.0.0'],
     entry_points={
         'indico.plugins': {'mlzexport = indico_mlz_export.plugin:MLZExporterPlugin'},
     },
