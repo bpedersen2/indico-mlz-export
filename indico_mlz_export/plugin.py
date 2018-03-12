@@ -16,12 +16,16 @@ class MLZExporterPlugin(IndicoPlugin):
 
     Allow for registration data export to external systems
 
-    It offers old-style HTTP-API (http API token authentication
+    It offers both old-style HTTP-API (http API token authentication and new-style REST API (OAuth2 authentication)
     endpoints for exporting single registrations or list of all registrations.
 
     HTTP API:
         /export/mlzevent/<eventid>.{json|xml}
         /export/mlzevent/<eventid>/registrant/<registrant_id>.{json|xml}
+
+    REST API:
+        /mlz/export/<eventid>/registrants
+        /mlz/export/<eventid>/registrants/<registrantid>
     """
 
     acl_settings = {'managers'}
