@@ -18,6 +18,7 @@ class RHMLZExportBase(RH):
     """RESTful registrant API base class"""
 
     CSRF_ENABLED = False
+    FLAT = False
 
     @oauth.require_oauth('registrants')
     def _check_access(self):
@@ -38,7 +39,11 @@ class RHExportRegistrations(RHMLZExportBase):
         self.event = Event.get(self.event_id, is_deleted=False)
 
     def _process_GET(self):
-        return jsonify(all_registrations(self.event, False))
+        return jsonify(all_registrations(self.event, self.FLAT))
+
+
+class RHExportRegistrationsFlat(RHExportRegistrations):
+    FLAT = True
 
 
 class RHExportRegistration(RHMLZExportBase):
@@ -50,4 +55,8 @@ class RHExportRegistration(RHMLZExportBase):
         self.event = Event.get(self.event_id, is_deleted=False)
 
     def _process_GET(self):
-        return jsonify(one_registration(self.event, self.registrant_id, False))
+        return jsonify(one_registration(self.event, self.registrant_id, self.FLAT))
+
+
+class RHExportRegistrationFlat(RHExportRegistration):
+    FLAT = True
