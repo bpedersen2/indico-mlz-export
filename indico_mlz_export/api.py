@@ -33,7 +33,12 @@ class MLZExportBase(HTTPAPIHook):
         self.flat = get_query_parameter(self._queryParams, ['flat'], False)
 
     def _has_access(self, user):
-        return self.event.can_manage(user, permission='registration')
+        try:
+            # v2.1+
+            return self.event.can_manage(user, permission='registration')
+        except TypeError:
+            # v2.0
+            return self.event.can_manage(user)
 
 
 class MLZExportRegistrationsHook(MLZExportBase):
