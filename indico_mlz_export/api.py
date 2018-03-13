@@ -80,6 +80,9 @@ def one_registration(event, registrant_id, flat):
 def process_field_data(_registration, flat):
     """Helper to generate field data for one registration"""
     one_res = build_registration_api_data(_registration)
+    ## local migration code
+    if 'datatitle' in one_res:
+        del one_res['datatitle']
     one_res['data'] = all_fields(_registration, flat)
     one_res['price'] = _registration.price
     return one_res
