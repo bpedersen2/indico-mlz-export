@@ -110,7 +110,8 @@ def process_field_data(_registration, flat):
         del one_res['datatitle']
     one_res['data'] = all_fields(_registration, flat)
     one_res['price'] = _registration.price
-    one_res['state'] = _registration.state.title
+    if _registration.state is not None:
+        one_res['state'] = _registration.state.title
     return one_res
 
 
