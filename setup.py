@@ -9,8 +9,8 @@ from setuptools import find_packages, setup
 
 setup(
     name='indico-mlz-export',
-    version='2.0.dev1',
-    url='https://github.com/bpedersen2/mlz-indico-export',
+    version='2.0.dev2',
+    url='https://github.com/bkolobara/mlz-indico-export',
     license='MIT',
     author='MLZ Indico Team',
     author_email='bjoern.pedersen@frm2.tum.de',
