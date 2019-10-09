@@ -9,7 +9,7 @@ from setuptools import find_packages, setup
 
 setup(
     name='indico-mlz-export',
-    version='2.0.dev1',
+    version='2.2',
     url='https://github.com/bpedersen2/mlz-indico-export',
     license='MIT',
     author='MLZ Indico Team',
@@ -19,7 +19,7 @@ setup(
     include_package_data=True,
     install_requires=['indico>=2.0.0'],
     entry_points={
-        'indico.plugins': {'mlzexport = indico_mlz_export.plugin:MLZExporterPlugin'},
+        'indico.plugins': {'mlz_export = indico_mlz_export.plugin:MLZExporterPlugin'},
     },
     classifiers=[
         'Environment :: Plugins',
