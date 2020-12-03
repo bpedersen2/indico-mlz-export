@@ -1,0 +1,6 @@
+# pyproject.toml
+[build-system]
+requires = ["setuptools>=39", "setuptools_scm[toml]>=3.4"]
+build-backend = 'setuptools.build_meta'
+[tool.setuptools_scm]
+write_to = "indico_mlz_export/version.py" 
