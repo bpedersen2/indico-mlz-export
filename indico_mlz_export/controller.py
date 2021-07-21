@@ -30,7 +30,7 @@ from flask import jsonify, request
 from werkzeug.exceptions import Forbidden
 
 from indico.modules.events.models.events import Event
-from indico.modules.oauth import oauth
+from indico.core.oauth import require_oauth
 from indico.web.rh import RH
 from indico_mlz_export.api import all_registrations, one_registration
 
@@ -41,7 +41,7 @@ class RHMLZExportBase(RH):
     CSRF_ENABLED = False
     FLAT = False
 
-    @oauth.require_oauth('registrants')
+    @require_oauth('registrants')
     def _check_access(self):
         try:
             ok = self.event.can_manage(request.oauth.user, permission='registration')
