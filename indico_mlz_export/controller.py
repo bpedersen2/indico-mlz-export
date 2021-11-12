@@ -44,9 +44,9 @@ class RHMLZExportBase(RH):
     @require_oauth('registrants')
     def _check_access(self):
         try:
-            ok = self.event.can_manage(request.user, permission='registration')
+            ok = self.event.can_manage(request.oauth.user, permission='registration')
         except TypeError:
-            ok = self.event.can_manage(request.user)
+            ok = self.event.can_manage(request.oauth.user)
 
         if not ok:
             raise Forbidden()
