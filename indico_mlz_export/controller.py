@@ -26,27 +26,25 @@
 
 from __future__ import unicode_literals
 
-from flask import jsonify, request
+from flask import jsonify, request, session
 from werkzeug.exceptions import Forbidden
 
 from indico.modules.events.models.events import Event
-from indico.core.oauth import require_oauth
-from indico.web.rh import RH
+from indico.web.rh import RH,oauth_scope
 from indico_mlz_export.api import all_registrations, one_registration
 
-
+@oauth_scope('registrants')
 class RHMLZExportBase(RH):
     """RESTful registrant API base class"""
 
     CSRF_ENABLED = False
     FLAT = False
 
-    @require_oauth('registrants')
     def _check_access(self):
         try:
-            ok = self.event.can_manage(request.oauth.user, permission='registration')
+            ok = self.event.can_manage(session.user, permission='registration')
         except TypeError:
-            ok = self.event.can_manage(request.oauth.user)
+            ok = self.event.can_manage(session.user)
 
         if not ok:
             raise Forbidden()
