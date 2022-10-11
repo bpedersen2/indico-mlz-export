@@ -27,6 +27,8 @@
 from __future__ import unicode_literals
 
 from collections import defaultdict
+from io import StringIO, BytesIO
+from csv import DictWriter, QUOTE_ALL
 
 from sqlalchemy.orm import joinedload
 
@@ -34,7 +36,8 @@ from indico.modules.events.models.events import Event
 from indico.modules.events.registration.util import build_registration_api_data
 from indico.web.http_api import HTTPAPIHook
 from indico.web.http_api.util import get_query_parameter
-
+from indico_mlz_export import mlzexport_event_settings
+from indico.web.flask.util import send_file
 
 class MLZExportBase(HTTPAPIHook):
     """Base class for Mlz export http api"""
@@ -69,6 +72,13 @@ class MLZExportRegistrationsHook(MLZExportBase):
     def export_registration_info(self, user):
         return all_registrations(self.event, self.flat)
 
+class MLZExportRegistrationsFZJHook(MLZExportBase):
+    """Export a list of registrations (as FZJ compliant CSV)"""
+
+    RE = r'(?P<event>[\w\s]+)'
+
+    def export_registration_info(self, user):
+        return all_registrations_csv(self.event)
 
 class MLZExportRegistrationHook(MLZExportBase):
     """Export a single registration"""
@@ -91,6 +101,61 @@ def all_registrations(event, flat):
     for _registration in _registrations:
         result.append(process_field_data(_registration, flat))
     return result
+
+def all_registrations_csv(event):
+    an = { 'male': 'Mr.', 'female': 'Mrs.', 'divers': '' }
+    result = []
+    for registration in all_registrations(event, False):
+        pd = registration['data']['Personal Data']
+        print( pd.keys())
+        street = pd.get('Street and no.')
+        plz = pd.get('Zip Code')
+        city = pd.get('City')
+        payment = registration['data'].get('Payment')
+        vat = ''
+        invoice_x = ''
+        if payment:
+            other_address= payment.get('Other invoice address')
+            if other_address:
+                print (other_address)
+                address = other_address.split('\n')
+                al = len(address)
+                if al == 3:
+                    invoice_x = address[0]    
+                    street = address[1]
+                    plz,city = address[2].split(' ')[:2]
+            vat = payment.get('VAT ID','')
+        data = {}
+        data['status'] = ''
+        data['veranstaltungsschluessel'] = mlzexport_event_settings.get(event,'veranstaltungsid', '<unset>')
+
+        # dict_keys(['Academic title', 'Form of address', 'First Name', 'Surname', 'Institution', 'Department', 'Street and No.', "Institution's acronym", 'Zip Code', 'City', 'Country', 'Email', 'Phone'])
+        data['bsecname1'] = pd.get('Institution\'s acronym','')
+        data['bsecname2'] = pd.get('Institution','')
+        data['bsecname3'] = pd.get('Department','')
+        data['bsecname4'] = ''
+        data['postfach'] = ''
+        data['strasse'] = street
+        data['plz'] = plz
+        data['ort'] = city
+        data['land'] = pd.get('Country')
+        gender = pd.get('Gender','divers')
+        data['anrede'] =  pd.get('Form of address', an[gender])
+        data['titel'] = pd.get('Academic Title','')
+        data['vorname'] = pd.get('First Name')
+        data['nachname'] = pd.get('Surname')
+        data['mail'] = pd.get('Email')
+        data['teilnehmer_intern'] = 0
+        data['sprache'] = 'EN'
+        data['ust_id_nr'] = vat
+        data['betrag']=registration.get('ticket_price',0)
+        data['zahlweise']='U'
+        data['rechnungsnummer'] =''
+        result.append(data)
+    return to_csv(result)
+
+
+
 
 
 def one_registration(event, registrant_id, flat):
@@ -134,3 +199,14 @@ def all_fields(registration, flat=False):
     if flat:
         return [data, titles]
     return dict(data)
+
+def to_csv(data):
+    res= StringIO()
+    csv = DictWriter(res, data[0].keys(), dialect='excel', delimiter=';', quoting=QUOTE_ALL)
+    csv.writeheader()
+    csv.writerows(data)
+    r2 = BytesIO(res.getvalue().encode('utf-8'))
+    res.close()
+    rv = send_file('fzj.csv',r2, 'text/csv')
+    return rv
+

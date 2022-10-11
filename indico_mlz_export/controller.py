@@ -31,7 +31,7 @@ from werkzeug.exceptions import Forbidden
 
 from indico.modules.events.models.events import Event
 from indico.web.rh import RH,oauth_scope
-from indico_mlz_export.api import all_registrations, one_registration
+from indico_mlz_export.api import all_registrations, one_registration, all_registrations_csv
 
 @oauth_scope('registrants')
 class RHMLZExportBase(RH):
@@ -60,6 +60,16 @@ class RHExportRegistrations(RHMLZExportBase):
     def _process_GET(self):
         return jsonify(all_registrations(self.event, self.FLAT))
 
+
+class RHExportRegistrationsFZJ(RHMLZExportBase):
+    """ Export a list of registrations for an event"""
+
+    def _process_args(self):
+        self.event_id = request.view_args['event_id']
+        self.event = Event.get(self.event_id, is_deleted=False)
+
+    def _process_GET(self):
+        return all_registrations_csv(self.event)
 
 class RHExportRegistrationsFlat(RHExportRegistrations):
     FLAT = True

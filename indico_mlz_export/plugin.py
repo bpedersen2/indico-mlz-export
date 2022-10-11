@@ -25,12 +25,18 @@
 # @author: pedersen
 
 from __future__ import unicode_literals
+from indico.core import signals
+from flask import session
 
-from indico.core.plugins import IndicoPlugin
+from indico.core.plugins import IndicoPlugin, url_for_plugin
 from indico.web.http_api import HTTPAPIHook
 from indico_mlz_export.blueprint import blueprint
-from indico_mlz_export.api import MLZExportRegistrationsHook, MLZExportRegistrationHook
+from indico_mlz_export.api import MLZExportRegistrationsHook, MLZExportRegistrationHook, MLZExportRegistrationsFZJHook
+from indico.web.menu import SideMenuItem
+from indico.modules.events.features.util import is_feature_enabled
 
+from indico_mlz_export import _
+from indico_mlz_export.forms  import EventSettingsForm
 
 class MLZExporterPlugin(IndicoPlugin):
     """MLZ registration export API plugin
@@ -50,11 +56,30 @@ class MLZExporterPlugin(IndicoPlugin):
     """
 
     acl_settings = {'managers'}
+    configurable = True
+    event_settings_form = EventSettingsForm
 
     def init(self):
-        super(MLZExporterPlugin, self).init()
+        super().init()
+        self.connect(signals.menu.items, self.extend_event_management_menu, sender='event-management-sidemenu')
         HTTPAPIHook.register(MLZExportRegistrationsHook)
+        HTTPAPIHook.register(MLZExportRegistrationsFZJHook)
         HTTPAPIHook.register(MLZExportRegistrationHook)
 
     def get_blueprints(self):
         yield blueprint
+
+    def extend_event_management_menu(self, sender, event, **kwargs):
+        if event.can_manage(session.user) and is_feature_enabled(event, 'fzjexport'):
+            yield  SideMenuItem(
+                'FZJExport',
+                _('FZJ export'),
+                url_for_plugin('mlz_export.api_registrants_fzj', event),
+                section='services')
+            yield  SideMenuItem(
+                'FZJExportsettings',
+                _('FZJ export settings'),
+                url_for_plugin('mlz_export.configure', event),
+                section='services')
+            
+

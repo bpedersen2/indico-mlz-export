@@ -28,16 +28,30 @@
 from __future__ import unicode_literals
 
 from indico.core.plugins import IndicoPluginBlueprint
-from indico_mlz_export.controller import RHExportRegistrations, RHExportRegistration, RHExportRegistrationsFlat, RHExportRegistrationFlat
+from indico_mlz_export.controller import RHExportRegistrations, RHExportRegistration, RHExportRegistrationsFlat, RHExportRegistrationFlat, RHExportRegistrationsFZJ
 
 blueprint = IndicoPluginBlueprint('mlz_export', __name__, url_prefix='/mlz/export')
 # API
 blueprint.add_url_rule(
     '/<int:event_id>/registrants/<int:registrant_id>', 'api_registrant', RHExportRegistration, methods=('GET', ))
 blueprint.add_url_rule('/<int:event_id>/registrants', 'api_registrants', RHExportRegistrations)
+blueprint.add_url_rule('/<int:event_id>/registrants_fzj', 'api_registrants_fzj', RHExportRegistrationsFZJ)
 blueprint.add_url_rule(
     '/<int:event_id>/registrants_flat/<int:registrant_id>',
     'api_registrant_flat',
     RHExportRegistrationFlat,
     methods=('GET', ))
 blueprint.add_url_rule('/<int:event_id>/registrants_flat', 'api_registrants_flat', RHExportRegistrationsFlat)
+
+from indico_mlz_export.controllers import RHMLZExportManageEvent
+
+
+# Event management
+blueprint.add_url_rule('/<int:event_id>/manage', 'configure', RHMLZExportManageEvent, methods=('GET', 'POST'))
+blueprint.add_url_rule('/manage/mlzexport/', 'event_settings', RHMLZExportManageEvent, methods=('GET', 'POST'))
+# Event management
+#_bp.add_url_rule('/event/<int:event_id>/manage/payments/settings',
+#                 'event_settings_edit', RHPaymentSettingsEdit, methods=('GET', 'POST'))
+#_bp.add_url_rule('/event/<int:event_id>/manage/payments/method/<method>',
+#                 'event_plugin_edit', RHPaymentPluginEdit, methods=('GET', 'POST'))
+
