@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import argparse
 import sys
-from StringIO import StringIO
+from io import StringIO
 
 import requests
 import simplejson as json
@@ -94,7 +94,7 @@ if __name__ == '__main__':
         for r in registrants:
             registrant_base = registrants_base + '/{registrant_id}'.format(**r)
             res = indico.get(target_base + registrant_base)
-            print res.content
+            print(res.content)
 
     if args.flat:
         # Fetch all registrants (flattend format with ids
@@ -108,5 +108,5 @@ if __name__ == '__main__':
         for r in registrants:
             registrant_base = registrants_base + '/{registrant_id}'.format(**r)
             res = indico.get(target_base + registrant_base)
-            print res.content
+            print(res.content)
  
