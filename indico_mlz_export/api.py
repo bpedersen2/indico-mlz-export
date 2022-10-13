@@ -112,7 +112,6 @@ def all_registrations_csv(event):
         joinedload('data').joinedload('field_data')).all())
     for _registration in _registrations:
         registration = build_registration_api_data(_registration)
-        print(registration)
         pd = registration['personal_data']
         reg_data = _registration.data_by_field
         rdata = {}
@@ -126,7 +125,6 @@ def all_registrations_csv(event):
                     rdata[ft] = reg_data[field.id].data
                 else:
                     rdata[ft] = reg_data[field.id].friendly_data
-        print(rdata)
         street = rdata['street']
         plz = rdata['plz']
         city = rdata['city']
@@ -134,7 +132,6 @@ def all_registrations_csv(event):
         invoice_x = ''
         other_address = rdata.get('invoiceaddress')
         if other_address:
-            print(other_address)
             address = other_address.split('\n')
             al = len(address)
             if al == 3:
@@ -242,7 +239,6 @@ FZJ_MAPPING = {
 
 def ft_to_logickey(ft):
     for key, r_e in FZJ_MAPPING.items():
-        print(key, r_e.search(ft.lower()))
         if r_e.search(ft.lower()):
             return key
     return re.sub(r'\s+', '', ft.lower())
