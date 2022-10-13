@@ -226,8 +226,8 @@ def to_csv(data):
 
 
 FZJ_MAPPING = {
-    'bsecname1': re.compile(r'acronym'),
-    'bsecname2': re.compile(r'(institution$)|(affiliation)'),
+    'bsecname1': re.compile(r'acronym|(affiliation.*badge)'),
+    'bsecname2': re.compile(r'(institution$)|(affiliation(?!.*badge))'),
     'bsecname3': re.compile(r'department'),
     'plz': re.compile(r'zip|plz|postleitzahl'),
     'city': re.compile(r'city'),
