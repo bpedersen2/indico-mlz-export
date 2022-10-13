@@ -24,8 +24,7 @@
 #
 # @author: pedersen
 
-from __future__ import unicode_literals
-
+import re
 from collections import defaultdict
 from io import StringIO, BytesIO
 from csv import DictWriter, QUOTE_ALL
@@ -38,6 +37,7 @@ from indico.web.http_api import HTTPAPIHook
 from indico.web.http_api.util import get_query_parameter
 from indico_mlz_export import mlzexport_event_settings
 from indico.web.flask.util import send_file
+
 
 class MLZExportBase(HTTPAPIHook):
     """Base class for Mlz export http api"""
@@ -72,6 +72,7 @@ class MLZExportRegistrationsHook(MLZExportBase):
     def export_registration_info(self, user):
         return all_registrations(self.event, self.flat)
 
+
 class MLZExportRegistrationsFZJHook(MLZExportBase):
     """Export a list of registrations (as FZJ compliant CSV)"""
 
@@ -79,6 +80,7 @@ class MLZExportRegistrationsFZJHook(MLZExportBase):
 
     def export_registration_info(self, user):
         return all_registrations_csv(self.event)
+
 
 class MLZExportRegistrationHook(MLZExportBase):
     """Export a single registration"""
@@ -102,60 +104,71 @@ def all_registrations(event, flat):
         result.append(process_field_data(_registration, flat))
     return result
 
+
 def all_registrations_csv(event):
-    an = { 'male': 'Mr.', 'female': 'Mrs.', 'divers': '' }
+    an = {'male': 'Mr.', 'female': 'Mrs.', 'divers': ''}
     result = []
-    for registration in all_registrations(event, False):
-        pd = registration['data']['Personal Data']
-        print( pd.keys())
-        street = pd.get('Street and no.')
-        plz = pd.get('Zip Code')
-        city = pd.get('City')
-        payment = registration['data'].get('Payment')
+    _registrations = (event.registrations.filter_by(is_deleted=False).options(
+        joinedload('data').joinedload('field_data')).all())
+    for _registration in _registrations:
+        registration = build_registration_api_data(_registration)
+        print(registration)
+        pd = registration['personal_data']
+        reg_data = _registration.data_by_field
+        rdata = {}
+        field_title_map = {}
+        for section in _registration.sections_with_answered_fields:
+            for field in section.active_fields:
+                if field.id not in reg_data:
+                    continue
+                ft = ft_to_logickey(field.title)
+                if ft == 'country':
+                    rdata[ft] = reg_data[field.id].data
+                else:
+                    rdata[ft] = reg_data[field.id].friendly_data
+        print(rdata)
+        street = rdata['street']
+        plz = rdata['plz']
+        city = rdata['city']
         vat = ''
         invoice_x = ''
-        if payment:
-            other_address= payment.get('Other invoice address')
-            if other_address:
-                print (other_address)
-                address = other_address.split('\n')
-                al = len(address)
-                if al == 3:
-                    invoice_x = address[0]    
-                    street = address[1]
-                    plz,city = address[2].split(' ')[:2]
-            vat = payment.get('VAT ID','')
+        other_address = rdata.get('invoiceaddress')
+        if other_address:
+            print(other_address)
+            address = other_address.split('\n')
+            al = len(address)
+            if al == 3:
+                invoice_x = address[0]
+                street = address[1]
+                plz, city = address[2].split(' ')[:2]
+        vat = rdata.get('vat', '')
         data = {}
         data['status'] = ''
-        data['veranstaltungsschluessel'] = mlzexport_event_settings.get(event,'veranstaltungsid', '<unset>')
+        data['veranstaltungsschluessel'] = mlzexport_event_settings.get(event, 'veranstaltungsid', '<unset>')
 
-        # dict_keys(['Academic title', 'Form of address', 'First Name', 'Surname', 'Institution', 'Department', 'Street and No.', "Institution's acronym", 'Zip Code', 'City', 'Country', 'Email', 'Phone'])
-        data['bsecname1'] = pd.get('Institution\'s acronym','')
-        data['bsecname2'] = pd.get('Institution','')
-        data['bsecname3'] = pd.get('Department','')
+        data['bsecname1'] = rdata.get('bsecname1')
+        data['bsecname2'] = rdata.get('bsecname2')
+        data['bsecname3'] = rdata.get('bsecname3')
         data['bsecname4'] = ''
         data['postfach'] = ''
         data['strasse'] = street
         data['plz'] = plz
         data['ort'] = city
-        data['land'] = pd.get('Country')
-        gender = pd.get('Gender','divers')
-        data['anrede'] =  pd.get('Form of address', an[gender])
-        data['titel'] = pd.get('Academic Title','')
-        data['vorname'] = pd.get('First Name')
-        data['nachname'] = pd.get('Surname')
-        data['mail'] = pd.get('Email')
+        data['land'] = rdata.get('country')
+        gender = pd.get('Gender', 'divers')
+        data['anrede'] = rdata.get('formofaddress', an[gender])
+        data['titel'] = rdata.get('title', '')
+        data['vorname'] = pd.get('firstName')
+        data['nachname'] = pd.get('surname')
+        data['mail'] = pd.get('email')
         data['teilnehmer_intern'] = 0
         data['sprache'] = 'EN'
         data['ust_id_nr'] = vat
-        data['betrag']=registration.get('ticket_price',0)
-        data['zahlweise']='U'
-        data['rechnungsnummer'] =''
+        data['betrag'] = registration.get('ticket_price', 0)
+        data['zahlweise'] = 'U'
+        data['rechnungsnummer'] = ''
         result.append(data)
     return to_csv(result)
-
-
-
 
 
 def one_registration(event, registrant_id, flat):
@@ -200,13 +213,36 @@ def all_fields(registration, flat=False):
         return [data, titles]
     return dict(data)
 
+
 def to_csv(data):
-    res= StringIO()
+    res = StringIO()
     csv = DictWriter(res, data[0].keys(), dialect='excel', delimiter=';', quoting=QUOTE_ALL)
     csv.writeheader()
     csv.writerows(data)
     r2 = BytesIO(res.getvalue().encode('utf-8'))
     res.close()
-    rv = send_file('fzj.csv',r2, 'text/csv')
+    rv = send_file('fzj.csv', r2, 'text/csv')
     return rv
 
+
+FZJ_MAPPING = {
+    'bsecname1': re.compile(r'acronym'),
+    'bsecname2': re.compile(r'(institution$)|(affiliation)'),
+    'bsecname3': re.compile(r'department'),
+    'plz': re.compile(r'zip|plz|postleitzahl'),
+    'city': re.compile(r'city'),
+    'street': re.compile(r'street|strasse'),
+    'titel': re.compile(r'title|titel'),
+    'country': re.compile(r'country|land'),
+    'vat': re.compile(r'vat\s*id'),
+    'invoiceaddress': re.compile(r'invoiceaddress'),
+    'formofaddress': re.compile(r'form\s*of\s*address|anrede'),
+}
+
+
+def ft_to_logickey(ft):
+    for key, r_e in FZJ_MAPPING.items():
+        print(key, r_e.search(ft.lower()))
+        if r_e.search(ft.lower()):
+            return key
+    return re.sub(r'\s+', '', ft.lower())
