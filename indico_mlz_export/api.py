@@ -158,7 +158,7 @@ def all_registrations_csv(event):
         data['vorname'] = pd.get('firstName')
         data['nachname'] = pd.get('surname')
         data['mail'] = pd.get('email')
-        data['teilnehmer_intern'] = 0
+        data['teilnehmer_intern'] = '1' if 'fz-juelich.de' in pd.get('email') else '0'
         data['sprache'] = 'EN'
         data['ust_id_nr'] = vat
         data['betrag'] = registration.get('ticket_price', 0)
