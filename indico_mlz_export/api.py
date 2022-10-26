@@ -108,7 +108,7 @@ def all_registrations(event, flat):
 def all_registrations_csv(event):
     an = {'male': 'Mr.', 'female': 'Mrs.', 'divers': ''}
     result = []
-    _registrations = (event.registrations.filter_by(is_deleted=False).options(
+    _registrations = (event.registrations.filter_by(is_deleted=False, is_active=True, is_paid=False).options(
         joinedload('data').joinedload('field_data')).all())
     for _registration in _registrations:
         registration = build_registration_api_data(_registration)
