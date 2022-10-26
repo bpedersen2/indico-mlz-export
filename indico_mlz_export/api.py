@@ -97,7 +97,7 @@ class MLZExportRegistrationHook(MLZExportBase):
 
 def all_registrations(event, flat):
     """Helper to generate data for all registrations in an event"""
-    _registrations = (event.registrations.filter_by(is_deleted=False).options(
+    _registrations = (event.registrations.filter_by(is_deleted=False, is_active=True).options(
         joinedload('data').joinedload('field_data')).all())
     result = []
     for _registration in _registrations:
