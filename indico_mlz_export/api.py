@@ -108,7 +108,7 @@ def all_registrations(event, flat):
 def all_registrations_csv(event):
     an = {'male': 'Mr.', 'female': 'Mrs.', 'divers': ''}
     result = []
-    _registrations = (event.registrations.filter_by(is_deleted=False, is_active=True, is_paid=False).options(
+    _registrations = (event.registrations.filter_by(is_deleted=False, is_active=True).options(
         joinedload('data').joinedload('field_data')).all())
     for _registration in _registrations:
         registration = build_registration_api_data(_registration)
@@ -165,7 +165,9 @@ def all_registrations_csv(event):
         data['zahlweise'] = 'U'
         data['rechnungsnummer'] = ''
         result.append(data)
-    return to_csv(result)
+    if result:
+        return to_csv(result)
+    return None
 
 
 def one_registration(event, registrant_id, flat):
