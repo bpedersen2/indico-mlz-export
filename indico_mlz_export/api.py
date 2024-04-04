@@ -158,7 +158,7 @@ def all_registrations_csv(event):
         data['sprache'] = 'EN'
         data['ust_id_nr'] = vat
         data['betrag'] = f'{registration.get('ticket_price', 0):.2f}'.replace('.', ',') if data['teilnehmer_intern'] == '0' else ''
-        data['zahlweise'] = 'K' if 'Credit Card' in rdata.get('paymentoption') else 'U'
+        data['zahlweise'] = 'K' if 'Credit Card' in rdata.get('paymentoption', '') else 'U'
         data['rechnungsnummer'] = ''
         result.append(data)
     if result:
