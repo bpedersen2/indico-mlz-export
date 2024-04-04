@@ -115,7 +115,6 @@ def all_registrations_csv(event):
         pd = registration['personal_data']
         reg_data = _registration.data_by_field
         rdata = {}
-        field_title_map = {}
         for section in _registration.sections_with_answered_fields:
             for field in section.active_fields:
                 if field.id not in reg_data:
@@ -128,14 +127,11 @@ def all_registrations_csv(event):
         street = rdata['street']
         plz = rdata['plz']
         city = rdata['city']
-        vat = ''
-        invoice_x = ''
         other_address = rdata.get('invoiceaddress')
         if other_address:
             address = other_address.split('\n')
             al = len(address)
             if al == 3:
-                invoice_x = address[0]
                 street = address[1]
                 plz, city = address[2].split(' ')[:2]
         vat = rdata.get('vat', '')
