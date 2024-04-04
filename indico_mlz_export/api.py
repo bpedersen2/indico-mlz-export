@@ -227,7 +227,7 @@ FZJ_MAPPING = {
     'plz': re.compile(r'zip|plz|postleitzahl'),
     'city': re.compile(r'city'),
     'street': re.compile(r'street|strasse'),
-    'titel': re.compile(r'title|titel'),
+    'title': re.compile(r'title|titel'),
     'country': re.compile(r'country|land'),
     'vat': re.compile(r'vat\s*id'),
     'invoiceaddress': re.compile(r'invoiceaddress'),
