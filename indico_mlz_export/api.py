@@ -115,7 +115,6 @@ def all_registrations_csv(event):
         pd = registration['personal_data']
         reg_data = _registration.data_by_field
         rdata = {}
-        field_title_map = {}
         for section in _registration.sections_with_answered_fields:
             for field in section.active_fields:
                 if field.id not in reg_data:
@@ -128,14 +127,11 @@ def all_registrations_csv(event):
         street = rdata['street']
         plz = rdata['plz']
         city = rdata['city']
-        vat = ''
-        invoice_x = ''
         other_address = rdata.get('invoiceaddress')
         if other_address:
             address = other_address.split('\n')
             al = len(address)
             if al == 3:
-                invoice_x = address[0]
                 street = address[1]
                 plz, city = address[2].split(' ')[:2]
         vat = rdata.get('vat', '')
@@ -161,8 +157,8 @@ def all_registrations_csv(event):
         data['teilnehmer_intern'] = '1' if 'fz-juelich.de' in pd.get('email') else '0'
         data['sprache'] = 'EN'
         data['ust_id_nr'] = vat
-        data['betrag'] = registration.get('ticket_price', 0)
-        data['zahlweise'] = 'U'
+        data['betrag'] = f'{registration.get('ticket_price', 0):.2f}'.replace('.', ',') if data['teilnehmer_intern'] == '0' else ''
+        data['zahlweise'] = 'K' if 'Credit Card' in rdata.get('paymentoption') else 'U'
         data['rechnungsnummer'] = ''
         result.append(data)
     if result:
@@ -231,11 +227,12 @@ FZJ_MAPPING = {
     'plz': re.compile(r'zip|plz|postleitzahl'),
     'city': re.compile(r'city'),
     'street': re.compile(r'street|strasse'),
-    'titel': re.compile(r'title|titel'),
+    'title': re.compile(r'title|titel'),
     'country': re.compile(r'country|land'),
     'vat': re.compile(r'vat\s*id'),
     'invoiceaddress': re.compile(r'invoiceaddress'),
     'formofaddress': re.compile(r'form\s*of\s*address|anrede'),
+    'paymentoption': re.compile(r'preferred.*payment')
 }
 
 
