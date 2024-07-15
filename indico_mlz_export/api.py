@@ -116,7 +116,7 @@ def all_registrations_csv(event):
         reg_data = _registration.data_by_field
         rdata = {}
         for section in _registration.sections_with_answered_fields:
-            for field in section.active_fields:
+            for field in section.available_fields:
                 if field.id not in reg_data:
                     continue
                 ft = ft_to_logickey(field.title)
@@ -196,7 +196,7 @@ def all_fields(registration, flat=False):
     else:
         data = defaultdict(dict)
     for section in registration.sections_with_answered_fields:
-        for field in section.active_fields:
+        for field in section.available_fields:
             if field.id not in reg_data:
                 continue
             if flat:
